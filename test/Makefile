@@ -5,7 +5,7 @@ default: fast
 
 .PHONY: all
 all:
-	./TOOLS/do_tests .
+	./TOOLS/do_tests . --suffix=.tla ../examples ../library
 
 .PHONY: partial
 partial:
