@@ -1,29 +1,21 @@
 #!/bin/sh
 # Copyright (C) 2011  INRIA and Microsoft Corporation
 
+
 BASEDIR="`pwd`"
 TOOLDIR="$BASEDIR/TOOLS"
-SUFFIX=_test.tla
+ARGS="$BASEDIR/../library"
 
-usage () {
-    echo "usage: do_tests [options] <dir>" >&2
-    exit 3
-}
+if [ "$1" = "smt_tests" ]
+  then export ARGS="$ARGS --method smt"
+fi
 
-export PM="$BASEDIR/bin/tlapm --stretch 10"
+export TLAPM="$BASEDIR/../tlapm -I $ARGS"
 export LOGFILE="$BASEDIR/tests.log"
+
 echo "###### `date '+%Y-%m-%d %H:%M:%S'` $0 $@" >>"$LOGFILE"
 
-while [ $# -ge 1 ]; do
-  case $1 in
-    --suffix=*) SUFFIX="${1##--suffix=}"; shift; continue;;
-    -*) usage;;
-  esac
-
-  find "$1" -name '*.tlaps' -prune -o -name "*${SUFFIX}" -print
-  shift
-
-done | {
+find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
 
   total=0
   success=0
@@ -35,13 +27,6 @@ done | {
     export FILE="`basename $f`"
     export DIR="`dirname $f`"
     echo "    $f" >>"$LOGFILE"
-    if [ "`basename "$DIR"`" = "smt_tests" ]; then
-        ARGS="--method smt"
-    else
-        ARGS=
-    fi
-    export TLAPM="$PM $ARGS"
-
     echo | (cd $DIR; $TOOLDIR/do_one_test "$FILE" "$TOOLDIR/separator" \
                                           "$FILE.out" "$FILE.err" \
                                           >"$FILE.out" 2>"$FILE.err")
@@ -69,4 +54,4 @@ done | {
        echo
        exit 3;;
   esac
-}
+)
