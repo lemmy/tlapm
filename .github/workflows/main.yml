@@ -96,7 +96,7 @@ jobs:
             eval $(opam env)
             ./configure
             cd tools/installer
-            ./tlaps-release.sh
+            bash -x ./tlaps-release.sh
             ./${{ matrix.INSTALLER }} -d ../..
             cd ../..
             PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
