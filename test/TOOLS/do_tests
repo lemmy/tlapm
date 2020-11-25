@@ -33,7 +33,7 @@ find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
     case $? in
       0) echo ok
          success=`expr $success + 1`
-         rm -f "$f.out" "$f.err"
+         #rm -f "$f.out" "$f.err"
          ;;
       *) echo FAILED
          fail=`expr $fail + 1`
