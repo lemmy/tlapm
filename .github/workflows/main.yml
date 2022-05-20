@@ -15,7 +15,7 @@ on:
 jobs:
   release:
     name: Create Github Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - name: Get current date
       id: date
@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        operating-system: [macos-latest, ubuntu-latest]
+        operating-system: [macos-latest, ubuntu-22.04]
         ocaml-compiler: [
             '4.08.1',
             '4.11.0',
@@ -67,7 +67,7 @@ jobs:
           INSTALLER: tlaps-1.5.0-i386-darwin-inst.bin
           DOWNLOADS: tlaps-1.5.0-i386-darwin-inst
 
-        - operating-system: ubuntu-latest
+        - operating-system: ubuntu-22.04
           INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
           DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
     steps:
@@ -124,7 +124,7 @@ jobs:
       ## Run the full test suite.
       - name: Download and Test TLAPM installer
         if: >-
-            matrix.operating-system == 'ubuntu-latest' &&
+            matrix.operating-system == 'ubuntu-22.04' &&
             matrix.ocaml-compiler == '4.13.0'
         ## The test suite has known failures, thus keep going until the
         ## test suite has been fixed (TODO).
@@ -139,5 +139,5 @@ jobs:
             PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH tlapm --version
             PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
       - name: Print Test Results
-        if: matrix.operating-system == 'ubuntu-latest'
+        if: matrix.operating-system == 'ubuntu-22.04'
         run: cat test/tests.log
