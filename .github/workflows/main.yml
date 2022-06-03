@@ -1,5 +1,15 @@
 name: Build and Package TLA Proof Manager
-on: [push]
+on:
+    push:
+    schedule:
+        - cron: '42 5 5 * *'
+    workflow_dispatch:
+      inputs:
+        git-sha:
+          description: 'git commit sha'
+          required: false
+          default: 'HEAD'
+
 
 ## The 'release' job creates an empty Github (draft) release before the 'publish' job
 ## below builds and uploads installers into the release.  This complexity is required
@@ -76,7 +86,9 @@ jobs:
           TAG_REF_NAME: ${{ github.ref }}
           REPOSITORY_NAME: ${{ github.repository }}
       ## Get TLAPS repository checked out.
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.git-sha }}
       ## Setup OCaml environment.
       - uses: ocaml/setup-ocaml@v2
         with:
