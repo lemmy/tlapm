@@ -35,6 +35,12 @@ let vprintf fmt =
   else
     Printf.ifprintf stderr fmt
 
+(* Substitutions of [expand_defs], where [None] stands for the identity.
+   Unlike [shift 0], it keeps the hypotheses before the first expanded
+   definition unchanged: [app_expr] also normalizes applications. *)
+let app_sub f s x = match s with None -> x | Some s -> f s x
+let scons_sub e s = Some (scons e (Option.default (shift 0) s))
+
 let expand_defs ?(what = fun _ -> true) ob =
   (* Inline the visible operator / pragma definitions of the obligation's
      context into the rest of the sequent.
@@ -57,18 +63,18 @@ let expand_defs ?(what = fun _ -> true) ob =
   let rec fold s kept cx = match Deque.front cx with
     | None -> (s, kept)
     | Some (h, hs) ->
-        let h = app_hyp s h in
+        let h = app_sub app_hyp s h in
         begin match h.core with
           | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
-              fold (scons e s) kept hs
+              fold (scons_sub e s) kept hs
           | Defn ({core = Bpragma (_, e, _)}, wd, _, _) when what wd ->
-              fold (scons e s) kept hs
+              fold (scons_sub e s) kept hs
           | _ ->
-              fold (bump s) (Deque.snoc kept h) hs
+              fold (Option.map bump s) (Deque.snoc kept h) hs
         end
   in
-  let (s, context) = fold (shift 0) Deque.empty sq.context in
-  let active = app_expr s sq.active in
+  let (s, context) = fold None Deque.empty sq.context in
+  let active = app_sub app_expr s sq.active in
   { ob with obl = { ob.obl with core = { context ; active } } }
 
 (*

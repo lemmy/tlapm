@@ -98,19 +98,22 @@ let print_new_res ob st warns time_used =
 
 (**** duplicates prep.ml *****)
 let expand_defs ?(what = fun _ -> true) ob =
-  let rec visit sq =
-    match Deque.front sq.context with
-    | None -> sq
+  let app f s x = match s with None -> x | Some s -> f s x in
+  let rec visit s acc hs =
+    match Deque.front hs with
+    | None -> (s, acc)
     | Some (h, hs) -> begin
         match h.core with
           | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+              let s = Option.default (shift 0) s in
+              visit (Some (scons (app_expr s e) s)) acc hs
           | _ ->
-              let sq = visit { sq with context = hs } in
-                { sq with context = Deque.cons h sq.context }
+              visit (Option.map bump s) (Deque.snoc acc (app app_hyp s h)) hs
       end
   in
-  let obl = visit ob.obl.core in
+  let sq = ob.obl.core in
+  let (s, context) = visit None Deque.empty sq.context in
+  let obl = { context ; active = app app_expr s sq.active } in
      { ob with obl = { ob.obl with core = obl } }
 
 
