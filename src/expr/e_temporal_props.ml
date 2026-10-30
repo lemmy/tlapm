@@ -119,11 +119,14 @@ let compute_time scx e =
   | true -> Always
   | _ -> Now
 
-let check_time_change ctx tm = match tm with
+(* `cx` is the context in which `ctx` is interpreted. *)
+let check_time_change ?(cx = Deque.empty) ctx tm = match tm with
 | Now -> Now
-| Always -> Deque.fold_left begin
-  fun acc a -> match a.core with
-  | Fact(_,_,Now) -> Now
-  | _ -> acc
-  end Always ctx
+| Always -> fst (Deque.fold_left begin
+  fun (acc, cx) a -> match a.core with
+  | Fact(_,_,Now) -> (Now, Deque.snoc cx a)
+  | Fresh (_, _, _, Bounded (dom, _)) when compute_time cx dom = Now ->
+      (Now, Deque.snoc cx a)
+  | _ -> (acc, Deque.snoc cx a)
+  end (Always, cx) ctx)
 | _ -> failwith "error"

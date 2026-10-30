@@ -155,6 +155,8 @@ let prove_assertion ~suffices cx goal asq time_flag =
           Fact (f, vis, tm) @@ h
       | _ -> h
   end asq.core.context in
+  let new_time_flag =
+    Expr.Temporal_props.check_time_change ~cx asq.core.context time_flag in
   (* here we add the asserted sequent assumptions to the context and they are
    * visible if they are anon *)
   (* the time is taken to be the flag because sequents get the time of the flag
@@ -174,7 +176,7 @@ let prove_assertion ~suffices cx goal asq time_flag =
   let cx = Deque.snoc cx noldfac in
 
   let stbod = assumed_facts 2 asq.core @@ asq in
-  let time_flag = Expr.Temporal_props.check_time_change asq.core.context time_flag in
+  let time_flag = new_time_flag in
   let stdef = Defn (Operator (stepnm, stbod) @@ asq,
                     Proof time_flag , Visible, Local) @@ asq in
   let cx = Deque.snoc cx stdef in
