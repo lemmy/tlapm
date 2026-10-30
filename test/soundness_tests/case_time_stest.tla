@@ -1,9 +1,9 @@
 ------------- MODULE case_time_stest --------------
 
-\* CASE x = 0 gives the case assumption x = 0 the time of the enclosing
-\* scope, which is Always.  So PTL receives it as [](x = 0) although it
-\* holds only now.  The theorem is false for a behavior where x changes
-\* from 0 to 1.
+\* CASE x = 0 must not give the case assumption x = 0 the time of the
+\* enclosing scope, which is Always: PTL would receive it as [](x = 0)
+\* although it holds only now.  The theorem is false for a behavior where
+\* x changes from 0 to 1.
 
 EXTENDS TLAPS
 
@@ -19,4 +19,3 @@ THEOREM x = 0 => (x = 0)'
     BY <1>1
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new
