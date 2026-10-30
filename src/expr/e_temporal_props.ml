@@ -56,9 +56,18 @@ let visitor = object (self : 'self)
         let f e = let () = self#expr ((cls, is_box), cx) e in
         !cls in
         closure := (List.for_all f ls)
-    (* decomposing formulas for confirming all are constants *)
-    | Apply _ ->
-        super#expr scx oe
+    (* decomposing formulas for confirming all are constants; the operator
+       need not be monotone, so as for Equiv each argument must be closed
+       under both polarities *)
+    | Apply (op, args) ->
+        let closed is_box e =
+          let cl = ref !closure in
+          self#expr ((cl, is_box), cx) e;
+          !cl
+        in
+        closure := closed is_box op
+          && List.for_all (fun e -> closed is_box e && closed (not is_box) e)
+               args
     (* sequents should be converted to implications for computing is_box *)
     | Sequent sq ->
         (* let closure1 = ref true in
