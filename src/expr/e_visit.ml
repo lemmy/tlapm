@@ -1527,6 +1527,19 @@ let collect_primed_vars cx e =
             | Apply ({core=Internal Prime}, [arg]) ->
                 assert (not prime_scope);
                 self#expr (true, cx) arg
+            (* a definition primes the variables its body primes, whether or
+               not it is hidden *)
+            | Apply ({core=Ix n}, args) when (match
+                    (E_t.get_val_from_id cx n).core with
+                    | Defn ({core=Operator (_, {core=Lambda _})}, _, _, _) ->
+                        true
+                    | _ -> false) ->
+                begin match (E_t.get_val_from_id cx n).core with
+                | Defn ({core=Operator (_, op)}, _, _, _) ->
+                    let op = E_subst.app_expr (E_subst.shift n) op in
+                    self#expr scx (E_subst.normalize ~cx op args @@ e)
+                | _ -> assert false
+                end
             | Ix n ->
                 begin
                 assert (n >= 1);
@@ -1537,6 +1550,8 @@ let collect_primed_vars cx e =
                         if (prime_scope &&
                                 not (Hashtbl.mem primed_vars var_name)) then
                             Hashtbl.add primed_vars var_name ()
+                    | Defn ({core=Operator (_, body)}, _, _, _) ->
+                        self#expr scx (E_subst.app_expr (E_subst.shift n) body)
                     | _ -> ()
                 end
             | Apply ({core=Internal ENABLED}, _) ->
