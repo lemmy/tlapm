@@ -38,9 +38,9 @@ let tlaops = [
   ] ;
   Sets,
   List.map withdef [
-    "SUBSET",        ( 8, 8),   Prefix,      [],                   SUBSET ;
-    "UNION",         ( 8, 8),   Prefix,      [],                   UNION ;
-    "DOMAIN",        ( 9, 9),   Prefix,      [],                   DOMAIN ;
+    "SUBSET",        (10,13),   Prefix,      [],                   SUBSET ;
+    "UNION",         (10,13),   Prefix,      [],                   UNION ;
+    "DOMAIN",        (10,13),   Prefix,      [],                   DOMAIN ;
     "\\subseteq",    ( 5, 5),   Infix Non,   [],                   Subseteq ;
     "\\in",          ( 5, 5),   Infix Non,   [],                   Mem ;
     "\\notin",       ( 5, 5),   Infix Non,   [],                   Notmem ;
