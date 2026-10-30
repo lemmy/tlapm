@@ -798,7 +798,7 @@ module Temporal_props: sig
     val compute_time:
         T.hyp Deque.dq -> T.expr -> T.time
     val check_time_change:
-        T.hyp Deque.dq -> T.time -> T.time
+        ?cx:T.hyp Deque.dq -> T.hyp Deque.dq -> T.time -> T.time
 end
 
 

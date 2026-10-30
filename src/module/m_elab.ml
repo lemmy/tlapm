@@ -1127,9 +1127,9 @@ let rec normalize mcx cx m =
             (* add the theorem's hypotheses to the context `cx` within
             the theorem's proof
             *)
-            let cx = Deque.append cx sq.context in
-            let time_flag = Expr.Temporal_props.check_time_change
+            let time_flag = Expr.Temporal_props.check_time_change ~cx
                 sq.context Always in
+            let cx = Deque.append cx sq.context in
             Util.eprintf ~debug:"simplify" ~at:mu
                 "@[<v0>Simplifying:@,  THEOREM %a@,  %a@]"
                     (Expr.Fmt.pp_print_expr (Deque.empty, Ctx.dot))
