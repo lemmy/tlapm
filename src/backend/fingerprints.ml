@@ -446,10 +446,12 @@ and fp_sequent stack buf sq =
              Stack.push stack (Identhyp ("HYP", hint.core), ref false);
              spin stack cx;
              let v,r = Stack.pop stack in
+             (* AutoUSE and ExpandENABLED can expand hidden definitions. *)
              if !r then
-               bprintf buf "$Def(%d,%d)"
+               bprintf buf "$Def(%d,%d,%a)"
                        (match v with Identhypi i -> i | _ -> assert false)
                        (if Expr.Constness.is_const e then 0 else 3)
+                       (fp_expr counthyp countvar stack) e
           | Defn ({core = Bpragma _}, _, Hidden, _) ->
              Stack.push stack (IdentBPragma, ref false);
              spin stack cx;
