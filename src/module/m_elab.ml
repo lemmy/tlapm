@@ -865,7 +865,7 @@ let check_enabled_axioms_map = object (self: 'self)
             | Ix n -> begin
                 let hyp = E_t.get_val_from_id cx n in
                 match hyp.core with
-                | Defn ({core=Operator (name, _)}, _, Visible, _) ->
+                | Defn ({core=Operator (name, body)}, _, _, _) ->
                     let nm = name.core in
                     (* is this a step number ? *)
                     if (String.contains_from nm 0 '<') then begin
@@ -874,6 +874,11 @@ let check_enabled_axioms_map = object (self: 'self)
                             let (step, cx, step_level) = StringMap.find nm sm in
                             max_level := max step_level !max_level
                         end end
+                    else begin
+                        let body =
+                            Expr.Levels.compute_level (Expr.T.cx_front cx n) body in
+                        max_level := max (Expr.Levels.get_level body) !max_level
+                    end
                 | _ -> ()
                 end
             | _ ->
