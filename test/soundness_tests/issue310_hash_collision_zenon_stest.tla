@@ -15,4 +15,3 @@ THEOREM []D33 => []E280
 BY Zenon
 
 =======================================================================
-known: https://github.com/tlaplus/tlapm/issues/310

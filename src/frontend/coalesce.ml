@@ -35,7 +35,8 @@ let crypthash scx cx e =
         Format.pp_print_flush fmt () ;
         Buffer.contents b
     in
-    "h" ^ shorter_string_to_hex s
+    (* LS4 rejects identifiers longer than 31 characters. *)
+    "h" ^ String.sub (string_to_hex s) 0 30
 
 (* for using it with PLTL it is enough to have a trivial coalescing returning a
  * unique constant depending on all symbols in it, TODO make a smarter (according

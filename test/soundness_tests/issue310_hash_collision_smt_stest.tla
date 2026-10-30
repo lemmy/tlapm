@@ -18,4 +18,3 @@ THEOREM []D33 => []E280
 BY SMT
 
 =====================================================================
-known: https://github.com/tlaplus/tlapm/issues/310
