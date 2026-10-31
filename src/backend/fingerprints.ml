@@ -276,7 +276,7 @@ let rec fp_expr counthyp countvar stack buf e =
             | Ix n ->
                 begin
                   match Stack.get stack n with
-                    | IdentBPragma,_ -> ()
+                    | IdentBPragma, r -> r := true
                     | _ -> bprintf buf "$OpApp(%a;%a)" fps o (list fps) es
                 end
             |  _ ->  bprintf buf "$OpApp(%a;%a)" fps o (list fps) es
@@ -452,10 +452,12 @@ and fp_sequent stack buf sq =
                        (match v with Identhypi i -> i | _ -> assert false)
                        (if Expr.Constness.is_const e then 0 else 3)
                        (fp_expr counthyp countvar stack) e
-          | Defn ({core = Bpragma _}, _, Hidden, _) ->
+          | Defn ({core = Bpragma (_, e, _)}, _, Hidden, _) ->
              Stack.push stack (IdentBPragma, ref false);
              spin stack cx;
-             ignore (Stack.pop stack)
+             let _, r = Stack.pop stack in
+             if !r then
+               bprintf buf "$Pragma(%a)" (fp_expr counthyp countvar stack) e
           | Defn ({core = Instance _}, _, Hidden, _) -> assert false
           | Fact (_, Hidden, _) ->
               (* These include pragmas mentioned in the `BY` and made hidden
@@ -488,10 +490,12 @@ and fp_sequent stack buf sq =
                   bprintf buf "$Def(%d;%a)"
                           (match v with Identhypi i -> i | _ -> assert false)
                           (fp_expr counthyp countvar stack) e
-          | Defn ({core = Bpragma _}, _, Visible, _) ->
+          | Defn ({core = Bpragma (_, e, _)}, _, Visible, _) ->
              Stack.push stack (IdentBPragma, ref false);
              spin stack cx;
-             ignore (Stack.pop stack)
+             let _, r = Stack.pop stack in
+             if !r then
+               bprintf buf "$Pragma(%a)" (fp_expr counthyp countvar stack) e
           | Defn ({core = Instance _}, _, Visible, _) -> assert false
           | Fact (e, Visible, tm) ->
                Stack.push stack (Identhyp ("HYP", "None"), ref false);
