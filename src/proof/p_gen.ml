@@ -306,7 +306,7 @@ and gen_step (sq, inits, time_flag) stp =
             assert (n <= Deque.size sq.context && n > 0);
             begin match Deque.nth ~backwards:true sq.context (n - 1) with
             | Some {core = (Fact (_,_,tm) | Defn (_,Proof tm,_,_))} -> tm
-            | e -> Always (* all other options are with Always scope*) end
+            | e -> time_flag (* other names are proved in the current scope *) end
         | _ -> time_flag (* the rest are expressions which get the current scope *) in
         let stp = assign stp Props.obs [fob] in
         let sq = {context = Deque.snoc sq.context (Fact (f, Visible, tm) @@ f);
