@@ -209,6 +209,27 @@ let anonymize_substitution anon cx subst =
     HintMap.map (anon#expr ([], cx)) subst
 
 
+let assert_substitution_levels cx subst (tla_module: M_t.mule) =
+    (* Raise error if an expression substituted for a `CONSTANT` is not
+    constant, or one substituted for a `VARIABLE` is not a state function.
+    *)
+    let check max_level kind nm =
+        let e = HintMap.find nm subst in
+        let level = Expr.Levels.get_level (Expr.Levels.compute_level cx e) in
+        if level > max_level then begin
+            Errors.err ~at:e
+                "The level of the expression substituted for the %s %s \
+                 must be at most %d."
+                kind nm.core max_level;
+            failwith "Module.Elab.assert_substitution_levels"
+        end in
+    let check_unit mu = match mu.core with
+        | Constants cs -> List.iter (fun (nm, _) -> check 0 "CONSTANT" nm) cs
+        | Variables vs -> List.iter (check 1 "VARIABLE") vs
+        | _ -> () in
+    List.iter check_unit tla_module.core.body
+
+
 let remove_pf mu =
     (* Erase proofs from module `mu`. *)
     match mu.core with
@@ -517,6 +538,7 @@ let instantiate
                     instance substitution_map
                     module_parameters cx in
     let subst = anonymize_substitution anon cx subst in
+    assert_substitution_levels cx subst tla_module;
     (* bring mule body to here *)
     let cx_shift = Deque.size cx - tla_module.core.defdepth in
     assert (cx_shift >= 0);
