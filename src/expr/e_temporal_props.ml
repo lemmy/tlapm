@@ -70,12 +70,11 @@ let visitor = object (self : 'self)
                args
     (* sequents should be converted to implications for computing is_box *)
     | Sequent sq ->
-        (* let closure1 = ref true in
-        let closure2 = ref true in
-        let _ = self#hyps ((closure1, not is_box), cx) sq.context in
+        let closure1 = ref !closure in
+        let closure2 = ref !closure in
+        let (_, cx) = self#hyps ((closure1, not is_box), cx) sq.context in
         let () = self#expr ((closure2, is_box), cx) sq.active in
-        closure := !closure1 && !closure2 *)
-        self#expr ((closure, is_box), cx) sq.active
+        closure := !closure1 && !closure2
     (* unexpended temporal operators *)
     | f ->
         closure := false
