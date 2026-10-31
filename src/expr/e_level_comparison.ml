@@ -52,12 +52,16 @@ class level_comparison = object (self : 'self)
     val mutable ctx1: ctx = Deque.empty
     val mutable ctx2: ctx = Deque.empty
     val mutable op_mapping: string StringMap.t = StringMap.empty
+    val mutable base1: int = 0
+    val mutable base2: int = 0
 
     (* Only the last `n_own` hypotheses of `ctx1_`, the declarations of a
     sequent fact, may be renamed. *)
     method compare ctx1_ ctx2_ n_own expr1 expr2 =
         ctx1 <- ctx1_;
         ctx2 <- ctx2_;
+        base1 <- Deque.size ctx1_;
+        base2 <- Deque.size ctx2_;
         op_mapping <- StringMap.empty;
         let res = self#expr ctx1_ ctx2_ expr1 expr2 in
         let all = ref true in
@@ -89,6 +93,12 @@ class level_comparison = object (self : 'self)
         match e.core, f.core with
         | Parens (e, _), _ -> self#expr cx1 cx2 e f
         | _, Parens (f, _) -> self#expr cx1 cx2 e f
+        (* binders are entered in parallel, so bound identifiers correspond
+           if they are bound at the same depth, whatever their names *)
+        | Ix m,
+          Ix n when Deque.size cx1 - m >= base1
+                    || Deque.size cx2 - n >= base2 ->
+            Deque.size cx1 - m - base1 = Deque.size cx2 - n - base2
         | Ix m,
           Ix n ->
             let get_hyp cx n = begin
@@ -253,7 +263,7 @@ class level_comparison = object (self : 'self)
         | Quant (q, bs, e),
           Quant (r, cs, f) ->
             let cx1_ = self#bounds_cx cx1 bs in
-            let cx2_ = self#bounds_cx cx2 bs in
+            let cx2_ = self#bounds_cx cx2 cs in
             q = r
             && self#bounds cx1 cx2 bs cs
             && self#expr cx1_ cx2_ e f
