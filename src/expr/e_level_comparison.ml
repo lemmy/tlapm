@@ -53,12 +53,15 @@ class level_comparison = object (self : 'self)
     val mutable ctx2: ctx = Deque.empty
     val mutable op_mapping: string StringMap.t = StringMap.empty
 
-    method compare ctx1_ ctx2_ expr1 expr2 =
+    (* Only the last `n_own` hypotheses of `ctx1_`, the declarations of a
+    sequent fact, may be renamed. *)
+    method compare ctx1_ ctx2_ n_own expr1 expr2 =
         ctx1 <- ctx1_;
         ctx2 <- ctx2_;
         op_mapping <- StringMap.empty;
         let res = self#expr ctx1_ ctx2_ expr1 expr2 in
         let all = ref true in
+        let n_outer = Deque.size ctx1_ - n_own in
         let check (key: string) (value: string) =
             if not (key = value) then begin
                 let found = ref false in
@@ -68,7 +71,7 @@ class level_comparison = object (self : 'self)
                         | Fresh (nm, _, _, _)
                         | Flex nm
                         | Defn ({core=Operator (nm, _)}, _, _, _) ->
-                            found := !found || (nm.core = key)
+                            found := !found || (i >= n_outer && nm.core = key)
                         | Fact _ -> ()
                         | _ -> assert false
                             (* Defn ( Recursive | Instance | Bpragrama ) *)
@@ -762,9 +765,10 @@ let check_level_change cx expr =
                                 inherit [unit] E_visit.iter_visible_hyp
                             end in
                             let (_, cx_goal) = visitor#hyps ((), cx2) hyps in
-                            found := !found || (checker cx_goal active)
+                            found := !found ||
+                                (checker cx_goal (Deque.size hyps) active)
                         | _ ->
-                            found := !found || (checker cx2 expr)
+                            found := !found || (checker cx2 0 expr)
                         end
                     | _ -> ()
                 end;
@@ -786,7 +790,8 @@ let check_level_change cx expr =
         end in
         let (_, cx_goal) = visitor#hyps ((), cx) hyps in
         let visitor = new level_comparison in
-        let f cx_hyps hyp = visitor#compare cx_hyps cx_goal hyp active in
+        let f cx_hyps n_own hyp =
+            visitor#compare cx_hyps cx_goal n_own hyp active in
         check_context f hyps;
         let proved = !found in
         begin if proved then begin
