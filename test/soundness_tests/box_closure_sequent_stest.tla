@@ -1,10 +1,10 @@
 ------------- MODULE box_closure_sequent_stest --------------
 
-\* The time of a fact is Always if the fact is box-closed, and tlapm
-\* decides this for a sequent from its goal alone.  The SUFFICES step
-\* turns the assumption into a sequent with the goal [](y = 0), so PTL
-\* receives it as [](x = 0 => [](y = 0)).  The theorem is false for a
-\* behavior where x is 1 and then 0, and y is always 1.
+\* The time of a fact is Always if the fact is box-closed, which for a
+\* sequent depends on its assumptions as well as its goal.  The SUFFICES
+\* step turns the assumption into a sequent with the goal [](y = 0),
+\* which PTL must not receive as [](x = 0 => [](y = 0)).  The theorem is
+\* false for a behavior where x is 1 and then 0, and y is always 1.
 
 EXTENDS TLAPS
 
@@ -18,4 +18,3 @@ THEOREM (x = 0 => [](y = 0)) => [](x = 0 => [](y = 0))
     BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new
