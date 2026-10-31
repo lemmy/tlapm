@@ -475,11 +475,12 @@ class level_comparison = object (self : 'self)
             Fair (fop, self#expr scx e, self#expr scx f) @@ oe
         *)
         | Case (is, o), Case (js, p) ->
-            let arms cx1 cx2 is js = match is, js with
+            let rec arms cx1 cx2 is js = match is, js with
               | [], [] -> true
               | (e, f) :: is, (g, h) :: js ->
                   self#expr cx1 cx2 e g
                   && self#expr cx1 cx2 f h
+                  && arms cx1 cx2 is js
               | _ -> false
             in
               arms cx1 cx2 is js
