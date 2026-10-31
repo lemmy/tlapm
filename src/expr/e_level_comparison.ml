@@ -749,6 +749,12 @@ let check_level_change cx expr =
                 begin match h.core with
                     | Fact (expr, Visible, _) ->
                         begin match expr.core with
+                        (* the assumptions of a sequent are not discharged *)
+                        | Sequent sq when Deque.find sq.context
+                                (fun h -> match h.core with
+                                    | Fact _ -> true
+                                    | _ -> false) <> None ->
+                            ()
                         | Sequent sq ->
                             let hyps = sq.context in
                             let active = sq.active in
