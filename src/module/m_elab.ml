@@ -662,6 +662,16 @@ let set_expr vis f cx =
     end
 
 
+(* A pragma invokes ENABLEDaxioms through its prover, whatever its name;
+   a prover given as `@` is chosen where the pragma is used. *)
+let is_enabledaxioms_pragma name meths =
+    let is_enabledaxioms (kwd, arg) =
+        kwd.core = "prover" && (match arg with
+            | Bstring "enabledaxioms" | Bdef -> true
+            | _ -> false) in
+    name.core = "ENABLEDaxioms"
+    || List.exists (List.exists is_enabledaxioms) meths
+
 let check_enabled_axioms_map = object (self: 'self)
     inherit [int ref * (Proof.T.step * hyp Deque.dq * int) StringMap.t]
         Proof.Visit.map as super
@@ -924,8 +934,8 @@ let check_enabled_axioms_map = object (self: 'self)
                 | Ix n -> begin
                     let hyp = E_t.get_val_from_id cx_ n in
                     match hyp.core with
-                    | Defn ({core=Bpragma (name, _, _)}, _, _, _) ->
-                        found := !found || (name.core = "ENABLEDaxioms")
+                    | Defn ({core=Bpragma (name, _, meths)}, _, _, _) ->
+                        found := !found || is_enabledaxioms_pragma name meths
                     | _ -> ()
                     end
                 | _ -> ()
@@ -1048,8 +1058,8 @@ let check_enabled_axioms_usage = object (self: 'self)
                 | Ix n -> begin
                     let hyp = E_t.get_val_from_id cx_ n in
                     match hyp.core with
-                    | Defn ({core=Bpragma (name, _, _)}, _, _, _) ->
-                        found := !found || (name.core = "ENABLEDaxioms")
+                    | Defn ({core=Bpragma (name, _, meths)}, _, _, _) ->
+                        found := !found || is_enabledaxioms_pragma name meths
                     | _ -> ()
                     end
                 | _ -> ()
