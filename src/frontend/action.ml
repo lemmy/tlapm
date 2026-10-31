@@ -157,6 +157,12 @@ let prime_commuter =
              ((Expr.Levels.get_level op) = 0) -> e
              | _ -> prime e
            end
+         (* the arguments that replace a parameter are primed themselves *)
+         | Lambda (vs, body) ->
+            let scx = self#adjs scx (List.map
+                (fun (v, shp) -> Fresh (v, shp, Constant, Unbounded) @@ v)
+                vs) in
+            Lambda (vs, self#expr scx body) @@ e
          | Apply ({core=Internal ENABLED; _}, _)
          | Opaque _ | Sequent _ | Let _ ->
             prime e
