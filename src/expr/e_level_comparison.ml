@@ -34,9 +34,24 @@ PROVE
 the algorithm checks that goal results from expr1 or expr2 by a renaming of
 identifiers that does not increase the levels of the identifiers.
 
-If an identifier is renamed, then it is assumed that the identifier before
-renaming is declared in declarations2. This ensures correct instantiation
-of universal quantifiers, outside of the quantifier scope.
+If an identifier is renamed, the identifier before renaming must be
+declared in declarations2. That is an instantiation of the assumed
+sequent. A constant of the obligation being proved is not a parameter
+of that sequent, and renaming it confuses two different constants.
+
+    \* proved. The first hypothesis is itself a sequent.
+    ASSUME
+        ASSUME NEW c PROVE c = c,
+        NEW d
+    PROVE d = d
+
+    \* not proved: c and d are constants of this obligation
+    ASSUME NEW c, NEW d, c = 1
+    PROVE d = 1
+
+In the first obligation, c belongs to declarations2 and is renamed to d.
+In the second, c and d are both declared beside the fact c = 1, so c = 1
+is compared with d = 1 with no renaming.
 
 If an identifier is not renamed, then the original identifier can occur in
 either declarations1 or declarations2. If the identifier occurs in declarations1
@@ -53,12 +68,45 @@ class level_comparison = object (self : 'self)
     val mutable ctx2: ctx = Deque.empty
     val mutable op_mapping: string StringMap.t = StringMap.empty
 
-    method compare ctx1_ ctx2_ expr1 expr2 =
+    method compare instantiable ctx1_ ctx2_ expr1 expr2 =
         ctx1 <- ctx1_;
         ctx2 <- ctx2_;
         op_mapping <- StringMap.empty;
         let res = self#expr ctx1_ ctx2_ expr1 expr2 in
         let all = ref true in
+        (* `instantiable` is declarations2 from the comment above: the
+           NEW parameters of an assumed sequent, or nothing when the
+           hypothesis is an ordinary fact. The comparison records a
+           mapping from a name in the hypothesis to a name in the goal.
+           `ctx1` contains every declaration visible at the hypothesis,
+           including constants of the obligation itself, so a renamed
+           name is accepted only when it is declared in `instantiable`.
+
+           Mapping c to d is allowed here, because NEW c is the
+           parameter of the assumed sequent. That sequent is the
+           first hypothesis of the outer ASSUME:
+
+               ASSUME
+                   ASSUME NEW c PROVE c = c,
+                   NEW d
+               PROVE d = d
+
+           The same mapping is rejected here. NEW c and NEW d are
+           constants of this obligation, and `instantiable` is empty:
+
+               ASSUME NEW c, NEW d, c = 1
+               PROVE d = 1
+
+           It is also rejected here. c is declared outside the assumed
+           sequent, so only e may be renamed, and c = 1 does not
+           become d = 1:
+
+               ASSUME
+                   NEW c,
+                   ASSUME NEW e PROVE c = 1,
+                   NEW d
+               PROVE d = 1
+        *)
         let check (key: string) (value: string) =
             if not (key = value) then begin
                 let found = ref false in
@@ -72,7 +120,7 @@ class level_comparison = object (self : 'self)
                         | Fact _ -> ()
                         | _ -> assert false
                             (* Defn ( Recursive | Instance | Bpragrama ) *)
-                end ctx1;
+                end instantiable;
                 all := !all && !found
             end in
         StringMap.iter check op_mapping;
@@ -750,15 +798,39 @@ let check_level_change cx expr =
                     | Fact (expr, Visible, _) ->
                         begin match expr.core with
                         | Sequent sq ->
+                            (* The hypothesis is an assumed sequent,
+                               ASSUME declarations2 PROVE expr2.
+                               declarations2 is the only context whose
+                               names may be renamed. expr2 is what has
+                               to match the goal. The first hypothesis
+                               below is itself a sequent:
+
+                                   ASSUME
+                                       ASSUME NEW c PROVE c = c,
+                                       NEW d
+                                   PROVE d = d
+
+                               declarations2 is NEW c and expr2 is c = c.
+                            *)
                             let hyps = sq.context in
                             let active = sq.active in
                             let visitor = object (self: 'self)
                                 inherit [unit] E_visit.iter_visible_hyp
                             end in
                             let (_, cx_goal) = visitor#hyps ((), cx2) hyps in
-                            found := !found || (checker cx_goal active)
+                            found := !found ||
+                                (checker sq.context cx_goal active)
                         | _ ->
-                            found := !found || (checker cx2 expr)
+                            (* The hypothesis is a formula, not an
+                               ASSUME/PROVE. It has no parameters, so
+                               no name may be renamed. c = 1 is compared
+                               with the goal unchanged:
+
+                                   ASSUME NEW c, NEW d, c = 1
+                                   PROVE d = 1
+                            *)
+                            found := !found ||
+                                (checker Deque.empty cx2 expr)
                         end
                     | _ -> ()
                 end;
@@ -780,7 +852,8 @@ let check_level_change cx expr =
         end in
         let (_, cx_goal) = visitor#hyps ((), cx) hyps in
         let visitor = new level_comparison in
-        let f cx_hyps hyp = visitor#compare cx_hyps cx_goal hyp active in
+        let f instantiable cx_hyps hyp =
+            visitor#compare instantiable cx_hyps cx_goal hyp active in
         check_context f hyps;
         let proved = !found in
         begin if proved then begin

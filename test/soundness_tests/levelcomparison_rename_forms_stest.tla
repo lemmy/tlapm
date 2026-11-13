@@ -92,4 +92,3 @@ THEOREM Except ==
 BY LevelComparison
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new

@@ -942,7 +942,7 @@ module LevelComparison: sig
     open T
     class level_comparison : object
         method compare:
-            ctx -> ctx ->
+            ctx -> ctx -> ctx ->
             expr -> expr ->
                 bool
         method expr:
