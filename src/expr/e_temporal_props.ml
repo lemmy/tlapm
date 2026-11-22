@@ -59,14 +59,24 @@ let visitor = object (self : 'self)
     (* decomposing formulas for confirming all are constants *)
     | Apply _ ->
         super#expr scx oe
-    (* sequents should be converted to implications for computing is_box *)
+    (* A sequent is an implication: visible assumptions at the opposite
+       polarity, the conclusion at the current polarity. *)
     | Sequent sq ->
-        (* let closure1 = ref true in
-        let closure2 = ref true in
-        let _ = self#hyps ((closure1, not is_box), cx) sq.context in
-        let () = self#expr ((closure2, is_box), cx) sq.active in
-        closure := !closure1 && !closure2 *)
-        self#expr ((closure, is_box), cx) sq.active
+        let hyp_closed = ref !closure in
+        let scx =
+          Deque.fold_left begin
+            fun scx h ->
+              begin match h.core with
+              | Fact (e, Visible, _) ->
+                  self#expr ((hyp_closed, not is_box), snd scx) e
+              | _ -> ()
+              end ;
+              adj scx h
+          end ((hyp_closed, not is_box), cx) sq.context
+        in
+        let conc_closed = ref !closure in
+        self#expr ((conc_closed, is_box), snd scx) sq.active ;
+        closure := !hyp_closed && !conc_closed
     (* unexpended temporal operators *)
     | f ->
         closure := false
@@ -90,8 +100,11 @@ let diamond_closure cx e =
    * without regard to the sequent in the fact) then we do nothing
    * 2) if the fact is a formula, then we apply Leslie’s algorithm to
    * decide its level.
-   * 3) if the fact is a sequent, if all (visible) assumptions are
-   * box-level, then the fact is box-level.
+   * 3) if the fact is a sequent, visible assumptions are checked at
+   * the opposite polarity and the conclusion at the current polarity.
+   * This is sufficient: <>F is defined as ~[]~F, and box closure is
+   * preserved by disjunction (Lamport, Specifying Systems, Sections
+   * 8.1 and 8.2).
 *)
 
 let compute_time scx e =
