@@ -14,4 +14,3 @@ THEOREM ASSUME F([](x = 0)) PROVE [](F([](x = 0)))
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new

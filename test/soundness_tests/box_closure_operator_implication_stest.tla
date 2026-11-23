@@ -12,4 +12,3 @@ THEOREM ASSUME Fimp([](x = 0)) PROVE [](Fimp([](x = 0)))
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/338

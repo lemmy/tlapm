@@ -11,4 +11,3 @@ THEOREM ASSUME Fif([](x = 0)) PROVE [](Fif([](x = 0)))
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/338

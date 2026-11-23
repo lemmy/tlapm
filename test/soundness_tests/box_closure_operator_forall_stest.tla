@@ -11,4 +11,3 @@ THEOREM ASSUME Fall([](x = 0)) PROVE [](Fall([](x = 0)))
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/338

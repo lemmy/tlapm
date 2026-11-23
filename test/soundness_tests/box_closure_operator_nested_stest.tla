@@ -13,4 +13,3 @@ THEOREM ASSUME Fnest([](x = 0)) PROVE [](Fnest([](x = 0)))
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/338

@@ -11,4 +11,3 @@ THEOREM ASSUME Fcase([](x = 0)) PROVE [](Fcase([](x = 0)))
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/338

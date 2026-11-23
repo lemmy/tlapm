@@ -13,4 +13,3 @@ THEOREM ASSUME Fand([](x = 0), [](y = 0))
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/338

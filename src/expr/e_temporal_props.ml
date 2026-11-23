@@ -10,8 +10,30 @@ open E_visit
 module B = Builtin
 
 
+(* Bodies already being checked. A cycle is not box-closed. *)
+let expanding = ref []
+
+let reconst cx e =
+  let visitor = object inherit E_constness.const_visitor end in
+  visitor#expr ((), cx) e
+
+(* Instantiate a defined operator. The body is shifted into the context
+   of the application, as in Proof.Simplify.expose_connective. *)
+let instantiate cx op args = match op.core with
+  | Ix n -> begin match Deque.nth ~backwards:true cx (n - 1) with
+      | Some {core = Defn ({core = Operator (_, bod)}, _, _, _)} -> begin
+          match bod.core with
+          | Lambda (vs, _) when List.length vs = List.length args ->
+              let shifted = E_subst.app_expr (E_subst.shift n) bod in
+              Some (bod, E_subst.normalize ~cx shifted args @@ shifted)
+          | _ -> None
+        end
+      | _ -> None
+    end
+  | _ -> None
+
 let visitor = object (self : 'self)
-  inherit [bool ref * bool] iter as super
+  inherit [bool ref * bool] iter
 
   method expr ((closure, is_box), cx as scx) oe =
     if (!closure = false) then ()
@@ -56,9 +78,16 @@ let visitor = object (self : 'self)
         let f e = let () = self#expr ((cls, is_box), cx) e in
         !cls in
         closure := (List.for_all f ls)
-    (* decomposing formulas for confirming all are constants *)
-    | Apply _ ->
-        super#expr scx oe
+    (* A defined operator is closed when its instantiated body is. The
+       operator and its arguments being closed is not enough: the body
+       may negate an argument. *)
+    | Apply (op, args) -> begin match instantiate cx op args with
+        | Some (bod, body) when not (List.memq bod !expanding) ->
+            expanding := bod :: !expanding ;
+            self#expr scx (reconst cx body) ;
+            expanding := List.tl !expanding
+        | _ -> closure := false
+      end
     (* A sequent is an implication: visible assumptions at the opposite
        polarity, the conclusion at the current polarity. *)
     | Sequent sq ->
@@ -77,17 +106,41 @@ let visitor = object (self : 'self)
         let conc_closed = ref !closure in
         self#expr ((conc_closed, is_box), snd scx) sq.active ;
         closure := !hyp_closed && !conc_closed
+    (* IF p THEN q ELSE r is (p => q) /\ (~p => r). p => p and _ => TRUE
+       are TRUE. *)
+    | If (p, q, r) ->
+        let implies a b =
+          if E_eq.expr a b
+             || (match b.core with Internal B.TRUE -> true | _ -> false)
+          then ()
+          else begin
+            let closure1 = ref !closure in
+            let closure2 = ref !closure in
+            self#expr ((closure1, not is_box), cx) a ;
+            self#expr ((closure2, is_box), cx) b ;
+            closure := !closure && !closure1 && !closure2
+          end
+        in
+        implies p q ;
+        implies (Apply (Internal B.Neg @@ p, [p]) @@ p) r
+    (* An unbounded quantifier preserves closure of its body. *)
+    | Quant (_, bs, e)
+      when List.for_all (fun (_, _, d) ->
+             match d with No_domain -> true | _ -> false) bs ->
+        self#expr (adjs scx (hyps_of_bounds bs)) e
     (* unexpended temporal operators *)
     | f ->
         closure := false
 end
 
 let box_closure cx e =
+  expanding := [] ;
   let good = ref true in
   visitor#expr ((good,true), cx) e ;
   !good
 
 let diamond_closure cx e =
+  expanding := [] ;
   let good = ref true in
   visitor#expr ((good,false), cx) e ;
   !good
